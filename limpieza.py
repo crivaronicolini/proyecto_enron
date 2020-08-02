@@ -2,15 +2,6 @@ from collections import defaultdict
 import pandas as pd
 import igraph as ig
 
-# df5 = pd.read_csv("enron/enron_marco_1_of_6.csv",
-#                   converters={'To': lambda x: x.strip("'[]").split("', '"),
-#                               'From': lambda x: x.strip("'[]").split("', '")})
-
-# df4 = pd.read_csv("enron/enron_marco_1_of_6.csv",
-#                   usecols=['Subject', 'To', 'From'],
-#                   converters={'To': lambda x: x. strip("'[]").split("', '"),
-#                               'From': lambda x: x.strip("'[]").split("', '")})
-
 df9 = pd.read_csv("enron/enron_marco.csv",
                   usecols=['To', 'From',
                            # 'X-Folder','X-To', 'Subject'
@@ -140,35 +131,8 @@ enron_en_dir2['From'].value_counts().drop_duplicates()
 # si, hay 333 a esas direcciones
 solo_enron[solo_enron['To'].isin(enron_en_dir2['From'])][['From', 'To']]
 
-'''
-para tratar de agrupar los mails con los nombres de carpetas
-para cada fila
-    split el from (me quedo con el apellido) y el user
-    fijarse si coinciden los elementos
-        si coinciden mandarlos a un df
-        si no coinciden mandarlos a otro
-'''
-dir_spl1 = pd.DataFrame(
-    solo_enron['Direccion-from'].apply(lambda x: x.split('.')[1]).to_list())
-dir_spl = pd.DataFrame(
-    solo_enron['Direccion-from'].apply(lambda x: x.split('.')).to_list())
-user_spl = pd.DataFrame(solo_enron['user'].apply(
-    lambda x: x.split('-')).to_list())
-apellidos = solo_enron['user'].apply(lambda x: x.split('-')[0])
-# al user_spl parece bien solo usar la primer columna que son los apellidos
-dir_spl[dir_spl.isin(apellidos)]
-# avor[avor[1].isin(apellidos)]
-matched_dirs = solo_enron[dir_spl[1].isin(apellidos)]
-empleados = solo_enron[dir_spl[1].isin(apellidos)]['From'].drop_duplicates()
-# ahora falta quedarme con los To que estan en esa lista
-# caca = pd.DataFrame([x for x in zip(dir_spl[1], user_spl[0]) if x[0] in x[1]])
-# [x for x in zip(dir_spl[1], user_spl[0])]
-# diferencia entre user y x-origin, a x-origin tiene menos gente y los que tiene estan mal
-# df9[df9['user']!=df9['X-Origin']][['Subject','user','X-Origin','X-Folder']].drop_duplicates().to_csv('comparacion-carpeta-user-subject.csv')
 
-
-# maybe me puedo fijar el mail mas comun en cada carpeta, y quedarme con
-# ese si coincide el apellido
+# una funcion util para ver todo el df
 def printx(x):
     pd.set_option('display.max_rows', 100)
     pd.set_option('display.max_columns', 100)
@@ -176,13 +140,14 @@ def printx(x):
     pd.reset_option('display.max_rows')
 
 
-# para quedarme con los 152 empleados miro la carpeta donde guardaban sus mails (user)
-malos = [
-    # 'greg.whalley',
-    # 'jeff.dasovich',
-    # 'stephanie.panus',
-    'sally.beck',
-]
+'''
+para quedarme con los 152 empleados miro la carpeta donde guardaban sus mails (user)
+para cada usuario me fijo las direcciones del from, ordenadas por frecuencia
+    split el from y el user
+        si coincide el apellido tiene 2 puntos
+        si coincide la inicial tiene 1 punto mas 
+        agrego ese mail a la lista de mails
+'''
 
 grup = solo_enron.groupby('user')
 user_mail = {}
@@ -223,14 +188,7 @@ for user in grup:
     # el mas probable es la primer direccion que tenga el maximo puntaje
     # en el usuario may-l eso me devuelve el indice anterior
     mail_probable = list(cosa.keys())[scores.index(max(scores))]
-    # mail_probable = direcciones_comunes[scores.index(max(scores))]
     user_mail[user[0]] = mail_probable
-    if mail_probable in malos:
-        # print(f'\n\nMALO {user}\n{mail_probable}\n{cosa}')
-        print(
-            f'\n\nMALO {user}\n{mail_probable}\n{[(i,j) for i,j in cosa.items() if j>0]}')
-    # if user[0] =='may-l':
-    #     raise IndexError
 
 mails = user_mail.values()
 # hago un dataframe con los mails en los que el from y el to estan en la lista de direcciones de empleados
@@ -250,17 +208,15 @@ los150 = los150.groupby(los150.columns.tolist()).size(
 duplicados:
  'greg.whalley',
     puede que hayan dos carpetas con distinto nombre que son  de la misma persona
+    greg whalley tiene whalley-l y whalley-g
  'stephanie.panus',
     parece que stephanie panus tiene las carpetas phanis-s y panus-s
 
 otros:
    {'robert.benson', 'steven.south'}
-    no estan solo en el from
+    estan solo en el from, solo en to
     
 '''
-# 13:34:26
-# 13:36:26
-# tardo 2 minutos
 
 '''
 
@@ -277,9 +233,4 @@ Ver con estudios de centralidad cuales fueron los principales empleados involucr
 - Clustering, metodos
 
 - Ver como evoluciona en el tiempo estas medidas
-
-
-Modificamos el script de brianray en data.world (https://github.com/brianray/data.world-scripts/blob/master/enron_email_script.ipynb) que agrupa los archivos de mail del dataset oficial (http://www.cs.cmu.edu/~enron/).
-Con esto obtuvimos un archivo csv donde cada fila es un mail y las columnas indican el destinatario, el sujeto, etc.
-
 '''
