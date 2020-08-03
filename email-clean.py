@@ -1,3 +1,4 @@
+import ipdb
 import os
 import pandas as pd
 from collections import defaultdict
@@ -27,7 +28,9 @@ dataset = []
 # dataset = defaultdict(list)
 
 walk = open('walksort')
+ipdb.set_trace()
 for mail in walk.read().splitlines():
+    i = 0
     # print(mails)
     lines = []
     # with open('./maildir/' + mail) as m:
@@ -50,26 +53,39 @@ for mail in walk.read().splitlines():
         # sep no es nulo, lo agrego al campo, y sino agrego esa linea al buffer
         # si encuentro el separador en una linea que nada que ver, la agrego al
         # buffer y la imprimo
-
         # data[particion[0]] = particion[2]
         if particion[2] == "":
-            buff.append(particion[0])
+            if particion[0] in data.keys():
+                buffkey = particion[0]
+                # print('buffkey')
+                # print(buffkey)
+            else:
+                buff.append(particion[0].lstrip('\t'))
+                # print('buff')
+                # print(buff)
+            # print(line)
             # print(buff)
             # breakpoint()
         elif particion[0] in data.keys():
-            if buff:
-                data
+            if buffkey:
+                data[buffkey] = ''.join(buff[1:])
+                # print(buffkey)
+                # print(''.join(buff[1:]))
+                buffkey = ''
+                buff = []
             data[particion[0]] = particion[2]
-            buff = []
         else:
             # cosas que no son los keys pero se escapan lo mando al buff
             buff.append(line)
-            print(line)
+            # print(line)
     # for campo in campos_listados:
     #     data[campo] = data[campo].split(',')
     persona = mail.split('/')[0]
     data['user'] = persona
     dataset.append(data)
+    i += 1
+    # if i == 2:
+    #     break
 walk.close()
 df = pd.DataFrame(dataset)
 # df = dataset.drop(['Mime-Version', 'Content-Type',
